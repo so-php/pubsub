@@ -29,3 +29,36 @@ As stated above, the message is a plain Json string. The structure is an object 
 }
 ```
 
+## Usage
+Using PubSub is pretty straight forward.
+Words in uppercase are values that need to be supplied/configured. 
+### Publishing
+```
+// need a channel to work with
+$conn = new AMQPConnection(HOST, PORT, USER, PASS, VHOST);
+$ch = $conn->channel();
+
+$pubSub = new PubSub($ch, EXCHANGE_NAME);
+$pubSub->publish('foo', array('hello'=>'world'));
+```
+
+### Publishing
+```
+// need a channel to work with
+$conn = new AMQPConnection(HOST, PORT, USER, PASS, VHOST);
+$ch = $conn->channel();
+
+function doSomethingOnEvent(Event e){
+   echo "Received event " . $e->getName() . " which was triggered on " . $e->getDateTime()->format('Y-m-d H:i:s') . " with the following params: " . print_r($e->getParams(),true);
+}
+
+$pubSub = new PubSub($ch, EXCHANGE_NAME);
+$pubSub->subscribe('foo', 'doSomethingOnEvent');
+
+// then wait for (and handle events)
+// either:
+$pubSub->wait(); // wraps $ch->wait() internally
+// or directly on the channel object
+$ch->wait();
+```
+
