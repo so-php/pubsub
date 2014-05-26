@@ -3,7 +3,8 @@
     "description": "Publish Subscribe pattern via php-amqplib",
     "require": {
         "php": ">=5.3.0",
-        "videlalvaro/php-amqplib": "*"
+        "videlalvaro/php-amqplib": "*",
+        "phpunit/phpunit": "3.7.*"
     },
     "autoload": {
         "psr-4": {"SoPhp\\": "src/SoPhp"}
