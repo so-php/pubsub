@@ -23,7 +23,7 @@ As stated above, the message is a plain Json string. The structure is an object 
         "number": 1.3,
         "of": "foo",
         "keys": {
-           "of any nesting level": true
+           "of any nesting level": "but be reasonable"
         }
     }
 }
