@@ -1,5 +1,5 @@
 # PubSub demo
-A simple demo for using PubSub. Creates an exchanged named `foo-exchange` and publishes a `hello` event with parameter of `who` supplied by first parameter passed to the publisher script.
+A simple demo for using PubSub. Creates an exchange named `foo-exchange` and publishes a `hello` event with parameter of `who` supplied by first parameter passed to the publisher script.
 Subscribers listen for the `hello` event and greet the `who` parameter.
 
 
