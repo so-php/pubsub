@@ -17,7 +17,7 @@ As stated above, the message is a plain Json string. The structure is an object 
 ```
 {
     "name": "some-event-name",
-    "time": "",
+    "time": "2005-08-15T15:52:01+0000",
     "params": {
         "any": true,
         "number": 1.3,
