@@ -8,9 +8,10 @@ namespace SoPhp\PubSub;
 use PhpAmqpLib\Channel\AMQPChannel;
 use PhpAmqpLib\Message\AMQPMessage;
 use SoPhp\Amqp\ConsumerDescriptor;
-use SoPhp\Amqp\Exception\InvalidArgumentException;
 use SoPhp\Amqp\ExchangeDescriptor;
 use SoPhp\Amqp\QueueDescriptor;
+use SoPhp\PubSub\Exception\InvalidArgumentException;
+use SoPhp\PubSub\Exception\InvalidEventException;
 
 class PubSub implements PubSubInterface {
     /** @var  AMQPChannel */
@@ -83,6 +84,15 @@ class PubSub implements PubSubInterface {
         $this->queueDescriptor = $descriptor;
     }
 
+    /**
+     * @return AMQPMessage
+     */
+    public function getMessage()
+    {
+        return $this->message;
+    }
+
+
 
     /**
      * @param AMQPChannel $channel
@@ -95,24 +105,17 @@ class PubSub implements PubSubInterface {
 
     /**
      * @param Event|string $event
-     * @param array $params
+     * @param array $params if an Event is provided for $event, $params are merged into (overwriting) $event's params
      * @throws \SoPhp\PubSub\Exception\InvalidEventException
      */
     public function publish($event, $params = array())
     {
-        if($event instanceof Event) {
-            $body = $event->toJson();
-        } else if(is_string($event)){
-            $evt = new Event($event, $params);
-            $body = $evt->toJson();
-        } else {
-            throw new InvalidArgumentException("Event must either be an instance of Event or a string");
-        }
+        $eventObj = $this->buildEvent($event, $params);
 
         if(!$this->message){
-            $this->message = new AMQPMessage($body, array('content_type' => 'text/plain', 'delivery_mode' => 2));
+            $this->message = new AMQPMessage($eventObj->toJson(), array('content_type' => 'text/plain', 'delivery_mode' => 2));
         } else {
-            $this->message->setBody($body);
+            $this->message->setBody($eventObj->toJson());
         }
 
         $this->getChannel()->basic_publish($this->message, $this->getExchangeDescriptor()->getName());
@@ -125,10 +128,13 @@ class PubSub implements PubSubInterface {
      */
     public function subscribe($event, $callback)
     {
-        if(!isset($this->listeners[$event])) {
-            $this->listeners[$event] = array();
+        $eventObject = $this->buildEvent($event, array());
+        $name = $eventObject->getName();
+
+        if(!isset($this->listeners[$name])) {
+            $this->listeners[$name] = array();
         }
-        $this->listeners[$event][] = $callback;
+        $this->listeners[$name][] = $callback;
 
         $this->initAmqp();
     }
@@ -140,18 +146,21 @@ class PubSub implements PubSubInterface {
      */
     public function unsubscribe($event, $callback = null)
     {
-        if(!isset($this->listeners[$event])) {
+        $eventObject = $this->buildEvent($event, array());
+        $name = $eventObject->getName();
+
+        if(!isset($this->listeners[$name])) {
             return;
         }
 
         if($callback == null){
-            unset($this->listeners[$event]);
+            unset($this->listeners[$name]);
             return;
         }
 
-        while(in_array($callback, $this->listeners[$event])){
-            $index = array_search($callback, $this->listeners[$event]);
-            unset($this->listeners[$event][$index]);
+        while(in_array($callback, $this->listeners[$name])){
+            $index = array_search($callback, $this->listeners[$name]);
+            unset($this->listeners[$name][$index]);
         }
         return;
     }
@@ -169,6 +178,7 @@ class PubSub implements PubSubInterface {
         }
     }
 
+
     protected function initAmqp(){
         if(!$this->declared){
             $ed = $this->getExchangeDescriptor();
@@ -185,6 +195,25 @@ class PubSub implements PubSubInterface {
             $cd = new ConsumerDescriptor(array($this, 'onMessage'), $qd->getName());
             $cd->setNoAck(true);
             $cd->consume($ch);
+        }
+    }
+
+    /**
+     * @param $event
+     * @param $params
+     * @return Event
+     */
+    protected function buildEvent($event, $params)
+    {
+        if($event instanceof Event) {
+            if(!empty($params)){
+                $event->setParams(array_merge($event->getParams(), $params));
+            }
+            return $event;
+        } else if(is_string($event)){
+            return new Event($event, $params);
+        } else {
+            throw new InvalidEventException("Event must either be an instance of Event or a string");
         }
     }
 }

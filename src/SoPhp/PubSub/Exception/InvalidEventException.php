@@ -4,6 +4,6 @@
 namespace SoPhp\PubSub\Exception;
 
 
-class InvalidEventException extends PubSubException {
+class InvalidEventException extends InvalidArgumentException {
 
 } 
